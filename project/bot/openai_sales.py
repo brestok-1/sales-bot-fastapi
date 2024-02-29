@@ -34,16 +34,16 @@ class Chatbot:
         text = transcript.text
         return text
 
-    def _get_ai_response(self, query: str, personality_type: str) -> str:
+    def _get_ai_response(self, query: str, personality_type: str, target_audience: str) -> str:
         user_message = {"role": 'user', "content": query}
         self.chat_history.append(user_message)
         messages = [
             {
                 "role": 'system',
                 "content": (
-                    "You are a customer to whom a sales representative (user) has written. The user will offer you to "
-                    f"buy a specific product. Be a {personality_type} person. Occasionally respond with 'oh, ah,"
-                    "' ask questions about the product, express some interest in it.\n"
+                    f"You are a {target_audience} to whom a sales representative (user) has written. The user will "
+                    f"offer you to buy a specific product. Be a {personality_type} person. Occasionally respond with "
+                    f"'oh, ah', or just silence, ask questions about the product, express some interest in it.\n"
                     "Don't ask too many questions and don't be overly "
                     f"interested. Respond {personality_type}. "
                 ),
@@ -75,12 +75,12 @@ class Chatbot:
 
     def ask(self, data: dict) -> dict:
         audio = data['audio']
-        objections = [i['value'] for i in data['objections']]
         personality_type = data['personality_type']
-        target_audience = data['target_audience']
+        target_audience = data['target_customer']
+        print(data)
         temp_filepath = self._transform_bytes_to_file(audio)
         transcript = self._transcript_audio(temp_filepath)
-        ai_response = self._get_ai_response(transcript, personality_type)
+        ai_response = self._get_ai_response(transcript, personality_type, target_audience)
         voice_ai_response = self._convert_response_to_voice(ai_response)
         data = {
             'user_query': transcript,

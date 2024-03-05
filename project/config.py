@@ -26,7 +26,8 @@ class ProductionConfig(BaseConfig):
                     "a sales representative. Your task is to evaluate the quality of the salesperson's conversation " \
                     "and provide further recommendations to improve their sales communication skills.\n" \
                     "In your response, you should create a report, highlighting the positive aspects, identifying any" \
-                    " negative elements in the conversation, and providing further recommendations. return your answer in Markdown2"
+                    "negative elements in the conversation, and providing further recommendations. return your answer " \
+                    "in Markdown2 "
 
 
 class TestConfig(BaseConfig):

@@ -19,13 +19,12 @@ def get_ai_report(history: List[Dict]) -> Dict:
         }
     ]
     chat_completion = settings.OPENAI_CLIENT.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-0125-preview",
         messages=messages,
-        temperature=0.6,
-        max_tokens=1024,
+        temperature=0.5,
+        # max_tokens=1024,
         n=1,
     )
 
     response = chat_completion.choices[0].message.content
-    print(response)
     return {'response': response}

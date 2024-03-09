@@ -11,8 +11,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     try:
         while True:
             data = await websocket.receive_json()
-            response = chatbot.ask(data)
-            await websocket.send_json(response)
+            if "audio" not in data.keys():
+                chatbot.set_settings(data)
+            else:
+                response = chatbot.ask(data)
+                await websocket.send_json(response)
     except WebSocketDisconnect:
         pass
 

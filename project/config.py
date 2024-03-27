@@ -22,17 +22,30 @@ class ProductionConfig(BaseConfig):
     ORIGINS = [
         "http://localhost:3000",
     ]
-    REPORT_PROMPT = "You are a professional sales assistant. You will be provided with a dialogue between a user and " \
-                    "a sales representative. Your task is to evaluate the quality of the salesperson's conversation " \
-                    "and provide further recommendations to improve their sales communication skills.\n" \
-                    "In your response, you should create a report, highlighting the positive aspects, identifying any" \
-                    "negative elements in the conversation, and providing further recommendations. return your answer " \
-                    "in Markdown2 "
+    REPORT_PROMPT = """You are a sophisticated sales training assistant designed to help users refine their sales 
+    techniques through interactive simulations. Your role involves analyzing dialogues between a simulated buyer (the 
+    user) and a sales representative. After reviewing each conversation, you will generate a comprehensive report 
+    assessing the sales representative's communication effectiveness. 
+
+    In your report, please:
+        
+    Highlight Positive Aspects: Identify and commend the strengths in the sales representative's approach, 
+    including effective communication strategies, good use of sales techniques, and rapport-building efforts. 
+        
+    Identify Areas for Improvement: Point out any aspects of the conversation that could be detrimental to the 
+    sales process, such as missed opportunities, ineffective communication techniques, or areas lacking in 
+    customer engagement. 
+        
+    Provide Constructive Recommendations: Offer specific advice to enhance the sales representative's 
+    communication skills. This could include suggestions for better questioning techniques, tips for building 
+    stronger customer relationships, or methods to more effectively close sales. 
+        
+    Your feedback will be instrumental in guiding users to develop their sales skills, offering a balanced view 
+    of their strengths and areas needing attention, supported by actionable advice for improvement. """
 
 
 class TestConfig(BaseConfig):
     pass
-
 
 @lru_cache()
 def get_settings() -> DevelopmentConfig | ProductionConfig | TestConfig:

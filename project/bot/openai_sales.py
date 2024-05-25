@@ -17,57 +17,21 @@ class ChatSettings:
     personal_background: str = None
 
     def get_prompt(self) -> str:
-        prompt = """
-        You are an AI acting as a buyer with a specific professional background, engaging in a conversation with a 
-        user who is the seller. Your responses should mimic natural human interactions, incorporating aspects of 
-        curiosity, skepticism, and occasional admissions of not being fully informed about the product or its 
-        relevance to your profession. Utilize the following settings to shape the conversation dynamically: 
-        """
-        if self.target_profile:
-            prompt += f"- Target Profile: {self.target_profile}. Your inquiries and comments, about limited, will " \
-                      f"subtly reflect this professional background, shaping your perspective on the product's utility " \
-                      f"and relevance."
-        if self.objections:
-            objections_str = f'"{", ".join(self.objections)}"'
-            prompt += f"- Objections: {objections_str}. Seamlessly weave these objections into the conversation as " \
-                      f"brief reasons for hesitation or skepticism, without delving deeply into discussions or seeking" \
-                      f" extensive clarifications."
-        if self.personality_type:
-            prompt += f"- Personality Type: {self.personality_type}. Your " \
-                      f"responses should reflect this mood, adjusting the tone and approach of your interactions. "
-        if self.pitch_script:
-            prompt += f"- Pitch Script: {self.pitch_script}. Your initial reaction will be influenced by the type of " \
-                      f"call, showing varying degrees of openness or reluctance based on whether it's a cold, mock, " \
-                      f"or warm call. "
-        if self.goal:
-            prompt += f"- Goal: {self.goal}. Although your responses are concise, aim to subtly guide the seller " \
-                      f"towards addressing these improvement areas through their pitch, providing minimal but pointed " \
-                      f"feedback. "
-        if self.reason:
-            prompt += f"- Reason: {self.reason}. Your minimal questions or comments will indirectly relate to this " \
-                      f"purpose, indicating a passive interest in what the seller has to offer based on the call's " \
-                      f"intent."
-        if self.last_contact:
-            prompt += f"- Last Contact: {self.last_contact}. This information will influence your recognition of the " \
-                      f"seller and the context of your relationship, whether it's a first-time conversation or a " \
-                      f"follow-up. "
-        if self.product_details:
-            prompt += f"- Product Detail: {self.product_details}. Mention or hint at these details sparingly to show " \
-                      f"a basic understanding or awareness, primarily allowing the seller to elaborate on the " \
-                      f"product's features and benefits. "
-        if self.company_description:
-            prompt += f"- Company Description: {self.company_description}. Utilize this to assess the seller's pitch " \
-                      f"critically but with minimal outward curiosity, focusing on how they present the product's " \
-                      f"alignment with your professional needs. "
-        prompt += "Incorporate these elements to create a realistic and dynamic interaction,This revised approach " \
-                  "emphasizes your role as a typical customer on the receiving end of a sales call, characterized by " \
-                  "brief responses and a general posture of passive reception rather than active inquiry. "
+        objections_str = f'"{", ".join(self.objections)}"'
+        if self.personality_type.lower() == 'aggressive':
+            personality_type = 'a bit aggressive'
+        else:
+            personality_type = self.personality_type
+        prompt = settings.CONVERSATIONAL_PROMPT.replace('{personality_type}', personality_type).replace(
+            '{potential_objections}', objections_str)
         return prompt
 
 
 class Chatbot:
     chat_history = []
+    chat_settings = {}
     prompt = None
+    PERSONA = ''
 
     def __init__(self, memory=None):
         if memory is None:
@@ -108,9 +72,9 @@ class Chatbot:
         ]
         messages = messages + self.chat_history
         chat_completion = settings.OPENAI_CLIENT.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4-turbo",
             messages=messages,
-            temperature=0.5,
+            temperature=0.1,
             max_tokens=128,
             n=1,
         )
@@ -132,17 +96,47 @@ class Chatbot:
 
     def set_settings(self, data: dict[str, str]):
         chat_settings = ChatSettings()
-        chat_settings.target_profile = data.get('target_profile')
+        chat_settings.target_profile = data.get('target_customer')
         chat_settings.objections = [d["value"] for d in data['objections']]
         chat_settings.personality_type = data.get('personality_type')
         chat_settings.pitch_script = data.get('pitch_script')
         chat_settings.goal = data.get('goal')
-        chat_settings.rfeason = data.get('reason')
+        chat_settings.reason = data.get('reason')
         chat_settings.last_contact = data.get('last_contact')
         chat_settings.product_details = data.get('product_details')
         chat_settings.company_description = data.get('company_description')
         chat_settings.personal_background = data.get('personal_background')
+        self.chat_settings = chat_settings
         self.prompt = chat_settings.get_prompt()
+
+    def generate_random_persona(self):
+        necessary_settings_str = ''
+        if self.chat_settings.target_profile:
+            necessary_settings_str += f'Job: {self.chat_settings.target_profile}\n'
+        if self.chat_settings.personality_type:
+            necessary_settings_str += f"Character: {self.chat_settings.personality_type}\n"
+        if self.chat_settings.personal_background:
+            necessary_settings_str += f'Personal background: {self.chat_settings.target_profile}\n'
+        messages = [
+            {
+                'role': 'system',
+                'content': f'{settings.GENERATE_RANDOM_PERSONA.replace("{message}", necessary_settings_str)}\n'
+            }
+        ]
+        completion = settings.OPENAI_CLIENT.chat.completions.create(
+            messages=messages,
+            temperature=0.4,
+            n=1,
+            model='gpt-4-turbo',
+        )
+        response = completion.choices[0].message.content
+        self.prompt = self.prompt.replace("{random_persona}", response)
+        return {
+            'type': 'random_persona',
+            'data': {
+                'persona': response
+            }
+        }
 
     def ask(self, data: dict) -> dict:
         audio = data['audio']
@@ -151,8 +145,11 @@ class Chatbot:
         ai_response = self._get_ai_response(transcript)
         voice_ai_response = self._convert_response_to_voice(ai_response)
         data = {
-            'user_query': transcript,
-            'ai_response': ai_response,
-            'voice_response': voice_ai_response
+            'type': 'answering',
+            'data': {
+                'user_query': transcript,
+                'ai_response': ai_response,
+                'voice_response': voice_ai_response
+            }
         }
         return data

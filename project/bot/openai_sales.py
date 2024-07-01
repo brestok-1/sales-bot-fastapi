@@ -1,42 +1,20 @@
 import base64
+import os
 import tempfile
 
+from project.bot.schemas import ProspectProfile, ChatSettings
 from project.config import settings
 
 
-class ChatSettings:
-    target_profile: str = None
-    objections: list[str] = []
-    personality_type: str = None
-    pitch_script: str = None
-    goal: str = None
-    reason: str = None
-    last_contact: str = None
-    product_details: str = None
-    company_description: str = None
-    personal_background: str = None
-
-    def get_prompt(self) -> str:
-        objections_str = f'"{", ".join(self.objections)}"'
-        if self.personality_type.lower() == 'aggressive':
-            personality_type = 'a bit aggressive'
-        else:
-            personality_type = self.personality_type
-        prompt = settings.CONVERSATIONAL_PROMPT.replace('{personality_type}', personality_type).replace(
-            '{potential_objections}', objections_str)
-        return prompt
-
-
 class Chatbot:
-    chat_history = []
-    chat_settings = {}
-    prompt = None
-    PERSONA = ''
 
     def __init__(self, memory=None):
         if memory is None:
             memory = []
         self.chat_history = memory
+        self.chat_settings: ChatSettings | None = None
+        self.random_persona = None
+        self.prompt = None
 
     @staticmethod
     def _transform_bytes_to_file(data_bytes) -> str:
@@ -65,17 +43,14 @@ class Chatbot:
         messages = [
             {
                 "role": 'system',
-                "content": (
-                    self.prompt
-                ),
+                "content": settings.CONVERSATIONAL_PROMPT.replace('{profile}', self.random_persona)
             }
         ]
         messages = messages + self.chat_history
         chat_completion = settings.OPENAI_CLIENT.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-4o",
             messages=messages,
-            temperature=0.1,
-            max_tokens=128,
+            temperature=0.3,
             n=1,
         )
 
@@ -95,42 +70,28 @@ class Chatbot:
         return encoded_audio
 
     def set_settings(self, data: dict[str, str]):
-        chat_settings = ChatSettings()
-        chat_settings.target_profile = data.get('target_customer')
-        chat_settings.objections = [d["value"] for d in data['objections']]
-        chat_settings.personality_type = data.get('personality_type')
-        chat_settings.pitch_script = data.get('pitch_script')
-        chat_settings.goal = data.get('goal')
-        chat_settings.reason = data.get('reason')
-        chat_settings.last_contact = data.get('last_contact')
-        chat_settings.product_details = data.get('product_details')
-        chat_settings.company_description = data.get('company_description')
-        chat_settings.personal_background = data.get('personal_background')
-        self.chat_settings = chat_settings
-        self.prompt = chat_settings.get_prompt()
+        profile_settings = {k: v for k, v in data.items() if k.startswith('profile')}
+        other_settings = {k: v for k, v in data.items() if not k.startswith('profile')}
+        profile_object = ProspectProfile(**profile_settings)
+        self.chat_settings = ChatSettings(**other_settings)
+        self.chat_settings.prospect_profile = profile_object
 
     def generate_random_persona(self):
-        necessary_settings_str = ''
-        if self.chat_settings.target_profile:
-            necessary_settings_str += f'Job: {self.chat_settings.target_profile}\n'
-        if self.chat_settings.personality_type:
-            necessary_settings_str += f"Character: {self.chat_settings.personality_type}\n"
-        if self.chat_settings.personal_background:
-            necessary_settings_str += f'Personal background: {self.chat_settings.target_profile}\n'
+        persona_json = self.chat_settings.prospect_profile.model_dump_json()
         messages = [
             {
                 'role': 'system',
-                'content': f'{settings.GENERATE_RANDOM_PERSONA.replace("{message}", necessary_settings_str)}\n'
+                'content': settings.GENERATE_RANDOM_PERSONA.replace("{profile}", persona_json)
             }
         ]
         completion = settings.OPENAI_CLIENT.chat.completions.create(
             messages=messages,
-            temperature=0.4,
+            temperature=1,
             n=1,
-            model='gpt-4-turbo',
+            model='gpt-4o',
         )
         response = completion.choices[0].message.content
-        self.prompt = self.prompt.replace("{random_persona}", response)
+        self.random_persona = response
         return {
             'type': 'random_persona',
             'data': {
@@ -152,4 +113,5 @@ class Chatbot:
                 'voice_response': voice_ai_response
             }
         }
+        os.remove(temp_filepath)
         return data

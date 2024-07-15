@@ -7,21 +7,21 @@ class UserFilterQuerySchema(BaseModel):
 
 
 class ProspectProfile(BaseModel):
-    profileAge: str
-    profileGender: str
-    profileIncomeBracket: str
-    profileOccupation: str
-    profileIndustry: str
-    profileLocation: str
-    profileEducationLevel: str
-    profileFamilySize: str
-    profileHomeOwnership: str
-    profileInterests: str
+    profileAge: str | None = None
+    profileGender: str | None = None
+    profileIncomeBracket: str | None = None
+    profileOccupation: str | None = None
+    profileIndustry: str | None = None
+    profileCompany: str | None = None
+    profileLocation: str | None = None
+    profileInterests: str | None = None
+    profileGoals: str | None = None
+    profileAdditionalInformation: str | None = None
 
 
 class ChatSettings(BaseModel):
     prospect_profile: ProspectProfile | None = None
-    goal: str | None
-    reason: str | None
-    productDetail: str | None
-    companyDescription: str | None
+    goal: str | None = None
+    reason: str | None = None
+    productDetail: str | None = None
+    companyDescription: str | None = None

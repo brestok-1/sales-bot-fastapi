@@ -70,8 +70,8 @@ class Chatbot:
         return encoded_audio
 
     def set_settings(self, data: dict[str, str]):
-        profile_settings = {k: v for k, v in data.items() if k.startswith('profile')}
-        other_settings = {k: v for k, v in data.items() if not k.startswith('profile')}
+        profile_settings = {k: v for k, v in data.items() if k.startswith('profile') if v is not None}
+        other_settings = {k: v for k, v in data.items() if not k.startswith('profile') and v is not None}
         profile_object = ProspectProfile(**profile_settings)
         self.chat_settings = ChatSettings(**other_settings)
         self.chat_settings.prospect_profile = profile_object

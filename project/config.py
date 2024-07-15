@@ -49,6 +49,7 @@ The user fills out information about themselves, providing data about their pers
 - Your response must be varied, consisting of two to three paragraphs. Come up with first name and last name, create facts about the person based on their data; your description should be rich and interesting.
 - Your description must mention all the listed characteristics.
 - Your response should be in the form of description of the person.
+- If these fields are specified:profileInterests, profileGoals, profileAdditionalInformation, then you must come up with an additional paragraph with the "backstory" of the character.
 
 [/INST]"""
     REPORT_PROMPT = """You are a sophisticated sales training assistant designed to help users refine their sales 
@@ -92,6 +93,7 @@ You are having a conversation with the user, who is acting as a sales representa
 - Fully immerse yourself in the role of the person described in the "## Profile" section. Imagine you are that person.
 - Your responses should be varied. Sometimes make up interesting facts based on the described person to keep the dialogue going with the sales representative.
 - Be brief. While your responses should be varied, they should also be concise and to the point.
+- **Do not ask any questions**. Remember, you're prospect, not sales representative. The sales representative must provide the information himself.
 
 [/INST]"""
 
